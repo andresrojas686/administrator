@@ -19,7 +19,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const login = (username: string, password: string): boolean => {
-    if (username === 'admin' && password === 'password') {
+    if (username === 'admin' && password === 'passw0rd') {
       setIsAuthenticated(true);
       localStorage.setItem('isLoggedIn', 'true');
       return true;
