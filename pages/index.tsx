@@ -2,6 +2,8 @@ import Head from "next/head";
 import client from "../lib/mongodb";
 import Link from 'next/link';
 import type { InferGetServerSidePropsType, GetServerSideProps } from "next";
+import styles2 from './styles/estilistas.module.css';
+
 
 type ConnectionStatus = {
   isConnected: boolean;
@@ -29,17 +31,17 @@ export default function Home({
   return (
     <div className="container">
       <Head>
-        <title>Create Next App</title>
+        <title>E-GO</title>
         <link rel="icon" href="/favicon.ico" />
       </Head>
 
       <main>
         <h1 className="title">
-          Welcome to <a href="https://nextjs.org">Next.js with MongoDB!</a>
+          Welcome to <a href="https://nextjs.org">Estilistas-Go!</a>
         </h1><br></br>
 
-        <Link href="/login">
-        Ir al login
+        <Link href="/login" className={styles2.loginButton}>
+        Iniciar Sesion
       </Link><br></br>
       
 
@@ -52,23 +54,26 @@ export default function Home({
           </h2>
         )}
 
-        <p className="description">
+        {/* <p className="description">
           Get started by editing <code>pages/index.js</code>
-        </p>
+        </p> */}
+        <p className="description">
+          Inicia sesion para continuar
+          </p>
 
-        <div className="grid">
+        {/* <div className="grid">
           <a href="https://nextjs.org/docs" className="card">
             <h3>Documentation &rarr;</h3>
             <p>Find in-depth information about Next.js features and API.</p>
           </a>
 
-          <a href="https://nextjs.org/learn" className="card">
+          <a href="#" className="card">
             <h3>Learn &rarr;</h3>
             <p>Learn about Next.js in an interactive course with quizzes!</p>
           </a>
 
           <a
-            href="https://github.com/vercel/next.js/tree/canary/examples"
+            href="#"
             className="card"
           >
             <h3>Examples &rarr;</h3>
@@ -76,9 +81,7 @@ export default function Home({
           </a>
 
           <a
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+            href="#"            
             className="card"
           >
             <h3>Deploy &rarr;</h3>
@@ -86,7 +89,7 @@ export default function Home({
               Instantly deploy your Next.js site to a public URL with Vercel.
             </p>
           </a>
-        </div>
+        </div> */}
       </main>
 
       <footer>

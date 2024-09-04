@@ -3,6 +3,8 @@
     margin: 0 auto;
     padding: 20px;
     font-family: Arial, sans-serif;
+    /* align-content: center; */
+    
   }
   
   .header {
@@ -10,13 +12,25 @@
     justify-content: space-between;
     align-items: center;
     margin-bottom: 30px;
+    margin-left: 20pt;
+    margin-right: 20pt;
   }
   
   .title {
     font-size: 2.5rem;
     color: #333;
+    
   }
   
+  .loginButton {
+    padding: 10px 20px;
+    background-color: #1877f2;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+  }
   .logoutButton {
     padding: 10px 20px;
     background-color: #f44336;

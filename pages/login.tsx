@@ -15,7 +15,8 @@ const Login: NextPage = () => {
     e.preventDefault();
     const success = login(username, password);
     if (success) {
-      router.push('/estilistas');
+      // router.push('/estilistas');
+      router.push('/dashboard');
     } else {
       setError('Usuario o contraseña incorrectos');
     }
