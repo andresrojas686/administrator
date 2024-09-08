@@ -11,9 +11,9 @@ import React, { useState } from 'react';
 
 interface Document {
     _id?: string;
-    documentUrl: string;
+    documentUrl?: string;
     documentStatus?: string;
-    tag: string;
+    tag?: string;
     stylistId: string;
 }
 
@@ -51,6 +51,8 @@ const ListadoStylistPage: React.FC<ListadoStylistPageProps> = ({ estilistas }) =
 
     // Función para aprobar el documento
     const handleApprove = async () => {
+        if (!selectedDocument) return;
+    
         try {
             const response = await fetch('/api/updateDocumentStatus', {
                 method: 'PUT',
@@ -58,14 +60,17 @@ const ListadoStylistPage: React.FC<ListadoStylistPageProps> = ({ estilistas }) =
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    documentId: selectedDocument?._id,
+                    documentId: selectedDocument._id,
                     status: 'Approved',
                 }),
             });
     
             if (response.ok) {
-                // Actualiza el estado del documento en la interfaz
-                setSelectedDocument({ ...selectedDocument, documentStatus: 'Approved' });
+                setSelectedDocument({
+                    ...selectedDocument,
+                    documentStatus: 'Approved',
+                    documentUrl: selectedDocument?.documentUrl || '', // Asegurarte de que siempre haya un valor
+                });
                 router.reload();
             } else {
                 console.error('Error actualizando el estado del documento');
@@ -90,7 +95,13 @@ const ListadoStylistPage: React.FC<ListadoStylistPageProps> = ({ estilistas }) =
     
             if (response.ok) {
                 // Actualiza el estado del documento en la interfaz
-                setSelectedDocument({ ...selectedDocument, documentStatus: 'Rejected' });
+                setSelectedDocument({
+                    ...selectedDocument,
+                    documentStatus: 'Approved',
+                    documentUrl: selectedDocument?.documentUrl || '', // Valor predeterminado para documentUrl
+                    stylistId: selectedDocument?.stylistId || '', // Proveer un valor predeterminado para stylistId
+                });
+                
                 router.reload();
             } else {
                 console.error('Error actualizando el estado del documento');
