@@ -1,3 +1,4 @@
+import Head from "next/head";
 import { GetServerSideProps } from 'next';
 import { useRouter } from 'next/router';
 import withAuth from '../components/withAuth';
@@ -38,6 +39,10 @@ const EstilistasPage: React.FC<EstilistasPageProps> = ({ estilistas }) => {
     };
 
     return (
+      <><Head>
+        <title>E-GO</title>
+        <link rel="icon" href="/favicon.ico" />
+      </Head>
         <div className={styles.container}>
           <header className={styles.header}>
             <h1 className={styles.title}>Lista de Estilistas</h1>
@@ -64,7 +69,7 @@ const EstilistasPage: React.FC<EstilistasPageProps> = ({ estilistas }) => {
               </div>
             ))}
           </div>
-        </div>
+        </div></>
       );
     };
 export const getServerSideProps: GetServerSideProps = async (context) => {
