@@ -6,11 +6,13 @@ import { useAuth } from '../contexts/AuthContext';
 import client from "../lib/mongodb";
 import styles from './styles/estilistas.module.css';
 import { ObjectId } from 'mongodb';
+import React, { useState } from 'react';
+
 
 interface Document {
-    _id: string;
+    _id?: string;
     documentUrl: string;
-    documentStatus: string;
+    documentStatus?: string;
     tag: string;
     stylistId: string;
 }
@@ -30,6 +32,73 @@ const ListadoStylistPage: React.FC<ListadoStylistPageProps> = ({ estilistas }) =
     console.log('Estilistas recibidos en el cliente:', estilistas);
     const { logout } = useAuth();
     const router = useRouter();
+
+    // Estado para manejar la visibilidad del modal y el documento seleccionado
+    const [selectedDocument, setSelectedDocument] = useState<Document | null>(null);
+
+    // Función para abrir el modal con el documento seleccionado
+    const openModal = (document: Document) => {
+        console.log("Documento seleccionado:", document); // Verificar que se recibe el documento correcto
+        setSelectedDocument(document);
+    };
+
+    // Función para cerrar el modal
+    const closeModal = () => {
+        setSelectedDocument(null);
+        router.reload();
+    };
+    
+
+    // Función para aprobar el documento
+    const handleApprove = async () => {
+        try {
+            const response = await fetch('/api/updateDocumentStatus', {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    documentId: selectedDocument?._id,
+                    status: 'Approved',
+                }),
+            });
+    
+            if (response.ok) {
+                // Actualiza el estado del documento en la interfaz
+                setSelectedDocument({ ...selectedDocument, documentStatus: 'Approved' });
+                router.reload();
+            } else {
+                console.error('Error actualizando el estado del documento');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+        }
+    };
+    
+    const handleReject = async () => {
+        try {
+            const response = await fetch('/api/updateDocumentStatus', {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    documentId: selectedDocument?._id,
+                    status: 'Rejected',
+                }),
+            });
+    
+            if (response.ok) {
+                // Actualiza el estado del documento en la interfaz
+                setSelectedDocument({ ...selectedDocument, documentStatus: 'Rejected' });
+                router.reload();
+            } else {
+                console.error('Error actualizando el estado del documento');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+        }
+    };
 
     const handleLogout = () => {
         logout();
@@ -59,9 +128,7 @@ const ListadoStylistPage: React.FC<ListadoStylistPageProps> = ({ estilistas }) =
                                         <li key={doc._id}>
                                             <strong>{doc.tag}:</strong> {doc.documentStatus}
                                             <br />
-                                            <a href={doc.documentUrl} target="_blank" rel="noopener noreferrer">
-                                                Ver documento
-                                            </a>
+                                            <a href="#" onClick={() => openModal(doc)}>Ver documento</a>
                                         </li>
                                     ))
                                 ) : (
@@ -72,6 +139,28 @@ const ListadoStylistPage: React.FC<ListadoStylistPageProps> = ({ estilistas }) =
                     ))}
                 </div>
             </div>
+
+            {/* Modal para mostrar la información del documento */}
+            {selectedDocument && (
+                <>{console.log("Mostrando modal para el documento:", selectedDocument)}
+                <div className={styles.modalOverlay}>
+                    <div className={styles.modalContent}>
+                        <h2>{selectedDocument.tag}</h2>
+                        <img src={selectedDocument.documentUrl} alt="Documento" />
+                        <p>Estado: {selectedDocument.documentStatus}</p>
+
+                        {selectedDocument.documentStatus === 'Pending' && (
+                            <div>
+                                <button onClick={handleApprove}>Aprobar</button>
+                                <button onClick={handleReject}>Rechazar</button>
+                            </div>
+                        )}
+
+                        <button onClick={closeModal}>Cerrar</button>
+                    </div>
+                </div>
+                </>
+            )}
         </>
     );
 };
@@ -87,20 +176,12 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
 
         // Para cada estilista, obtener sus documentos relacionados
         const estilistasConDocumentos = await Promise.all(estilistasDocs.map(async (estilista: any) => {
-            // Si el estilista._id ya es un ObjectId, lo usamos directamente, de lo contrario lo convertimos
-            //const stylistObjectId = typeof estilista._id === 'string' ? new ObjectId(estilista._id) : estilista._id;
             const stylistObjectId = new ObjectId(estilista._id);
 
             // Buscar documentos relacionados con el stylistId
             const documents = await db.collection('stylistdocumentmoderations')
                 .find({ stylistId: stylistObjectId })
                 .toArray();
-
-            // console.log(`Documentos para estilista ${estilista._id}:`, documents);
-
-            // console.log(`Stylist ID: ${estilista._id}, ObjectId: ${stylistObjectId}`);
-            // console.log("Estilista ID type:", typeof stylistObjectId);
-
 
             return {
                 ...estilista,
@@ -113,14 +194,11 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
                 }))
             };
         }));
-        // console.log("con documentos ",estilistasConDocumentos);
+
         return {
             props: {
-
                 estilistas: JSON.parse(JSON.stringify(estilistasConDocumentos)),
-
             },
-
         };
     } catch (error) {
         console.error('Error fetching estilistas:', error);
@@ -131,9 +209,8 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
             },
         };
     } finally {
-        await client.close(); // Asegúrate de cerrar la conexión
+        await client.close();
     }
-
 };
 
 export default withAuth(ListadoStylistPage);
