@@ -219,9 +219,10 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
                 error: 'Hubo un error al obtener los datos. Por favor, intente más tarde.'
             },
         };
-    } finally {
-        await client.close();
-    }
+    } 
+    // finally {
+    //     // await client.close();
+    // }
 };
 
 export default withAuth(ListadoStylistPage);
