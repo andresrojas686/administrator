@@ -11,6 +11,9 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
 
+  const adminUsername = process.env.NEXT_PUBLIC_ADMIN_USERNAME;
+  const adminPassword = process.env.NEXT_PUBLIC_ADMIN_PASSWORD;
+
   useEffect(() => {
     const storedAuth = localStorage.getItem('isLoggedIn');
     if (storedAuth === 'true') {
@@ -19,7 +22,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const login = (username: string, password: string): boolean => {
-    if (username === 'admin' && password === 'passw0rd') {
+    if (username === adminUsername && password === adminPassword) {
       setIsAuthenticated(true);
       localStorage.setItem('isLoggedIn', 'true');
       return true;
