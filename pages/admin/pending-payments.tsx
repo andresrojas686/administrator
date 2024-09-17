@@ -1,6 +1,10 @@
 // pages/admin/pending-payments.tsx
 import { useState } from 'react';
 import useSWR from 'swr';
+import withAuth from '../../components/withAuth';
+import { useAuth } from '../../contexts/AuthContext';
+import { useRouter } from 'next/router';
+import styles from '../styles/estilistas.module.css';
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
@@ -27,7 +31,10 @@ interface PaymentsResponse {
   totalPayments: number;
 }
 
-export default function PendingPayments() {
+export default withAuth(function PendingPayments() {
+  const { logout } = useAuth();
+  const router = useRouter();
+
   const [page, setPage] = useState(1);
   const [selectedPayment, setSelectedPayment] = useState<Payment | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -57,8 +64,17 @@ export default function PendingPayments() {
 
   const { payments, totalPayments } = data;
 
+  const handleLogout = () => {
+    logout();
+    router.push('/');
+};
+
   return (
     <div className="container mx-auto p-4">
+      <header className={styles.header}>
+                    <h1 className={styles.title}>Listado de Estilistas y Documentos</h1>
+                    <button className={styles.logoutButton} onClick={handleLogout}>Cerrar sesión</button>
+                </header>
       <h1 className="text-2xl font-bold mb-4">Pagos Pendientes</h1>
       <table className="min-w-full">
         <thead>
@@ -137,4 +153,4 @@ export default function PendingPayments() {
       )}
     </div>
   );
-}
+})
