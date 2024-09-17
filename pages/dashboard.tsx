@@ -45,10 +45,10 @@ const PaginaProtegida = () => {
             </div>
           </Link>
 
-          <Link href="https://github.com/vercel/next.js/tree/canary/examples" passHref>
+          <Link href="/admin/pending-payments" passHref>
             <div className="card"  >
-              <h3>Examples &rarr;</h3>
-              <p>Discover and deploy boilerplate example Next.js projects.</p>
+              <h3>Payments;</h3>
+              <p>Pending Payments</p>
             </div>
           </Link>
 
