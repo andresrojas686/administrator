@@ -1,10 +1,9 @@
-// pages/admin/pending-payments.tsx
 import { useState } from 'react';
 import useSWR from 'swr';
 import withAuth from '../../components/withAuth';
 import { useAuth } from '../../contexts/AuthContext';
 import { useRouter } from 'next/router';
-import styles from '../styles/estilistas.module.css';
+import styles from '../styles/PendingPayments.module.css'; // Nuevo archivo de estilos
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
@@ -36,8 +35,8 @@ export default withAuth(function PendingPayments() {
   const router = useRouter();
 
   const [page, setPage] = useState(1);
-  const [selectedPayment, setSelectedPayment] = useState<Payment | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedPayments, setSelectedPayments] = useState<string[]>([]);
+  const [totalSelectedAmount, setTotalSelectedAmount] = useState(0);
   const limit = 15;
 
   const { data, error } = useSWR<PaymentsResponse>(`/api/admin/payments?page=${page}&limit=${limit}`, fetcher);
@@ -49,108 +48,94 @@ export default withAuth(function PendingPayments() {
     return new Date(dateString).toLocaleString();
   };
 
-  const openPaymentDetail = (payment: Payment) => {
-    setSelectedPayment(payment);
-    setIsModalOpen(true);
+  const handleCheckboxChange = (accountId: string) => {
+    const selectedAccountPayments = data?.payments.filter(payment => payment.accountId === accountId) || [];
+
+    if (selectedPayments.includes(accountId)) {
+      setSelectedPayments((prev) => prev.filter(id => id !== accountId));
+      const deselectedAmount = selectedAccountPayments.reduce((sum, payment) => sum + payment.amount, 0);
+      setTotalSelectedAmount((prev) => prev - deselectedAmount);
+    } else {
+      setSelectedPayments((prev) => [...prev, accountId]);
+      const selectedAmount = selectedAccountPayments.reduce((sum, payment) => sum + payment.amount, 0);
+      setTotalSelectedAmount((prev) => prev + selectedAmount);
+    }
   };
 
-  const closePaymentDetail = () => {
-    setSelectedPayment(null);
-    setIsModalOpen(false);
-  };
-
-  if (error) return <div>Failed to load</div>;
-  if (!data) return <div>Loading...</div>;
+  if (error) return <div className={styles.error}>Failed to load</div>;
+  if (!data) return <div className={styles.loading}>Loading...</div>;
 
   const { payments, totalPayments } = data;
 
   const handleLogout = () => {
     logout();
     router.push('/');
-};
+  };
 
   return (
-    <div className="container mx-auto p-4">
+    <div className={styles.container}>
       <header className={styles.header}>
-                    <h1 className={styles.title}>Listado de Estilistas y Documentos</h1>
-                    <button className={styles.logoutButton} onClick={handleLogout}>Cerrar sesión</button>
-                </header>
-      <h1 className="text-2xl font-bold mb-4">Pagos Pendientes</h1>
-      <table className="min-w-full">
+        <h1 className={styles.title}>Listado de Pagos Pendientes</h1>
+        <button className={styles.logoutButton} onClick={handleLogout}>Cerrar sesión</button>
+      </header>
+
+      <h1 className={styles.pageTitle}>Pagos Pendientes</h1>
+      <table className={styles.table}>
         <thead>
           <tr>
-            <th className="px-6 py-3 border-b-2 border-gray-300 text-left text-xs leading-4 font-medium text-gray-500 uppercase tracking-wider">ID de Cuenta</th>
-            <th className="px-6 py-3 border-b-2 border-gray-300 text-left text-xs leading-4 font-medium text-gray-500 uppercase tracking-wider">Referencia</th>
-            <th className="px-6 py-3 border-b-2 border-gray-300 text-left text-xs leading-4 font-medium text-gray-500 uppercase tracking-wider">Monto</th>
-            <th className="px-6 py-3 border-b-2 border-gray-300 text-left text-xs leading-4 font-medium text-gray-500 uppercase tracking-wider">Moneda</th>
-            <th className="px-6 py-3 border-b-2 border-gray-300 text-left text-xs leading-4 font-medium text-gray-500 uppercase tracking-wider">Método de Pago</th>
-            <th className="px-6 py-3 border-b-2 border-gray-300 text-left text-xs leading-4 font-medium text-gray-500 uppercase tracking-wider">Estado del Pago</th>
-            <th className="px-6 py-3 border-b-2 border-gray-300 text-left text-xs leading-4 font-medium text-gray-500 uppercase tracking-wider">Fecha de Creación</th>
+            <th></th>
+            <th>ID de Cuenta</th>
+            <th>Referencia</th>
+            <th>Monto</th>
+            <th>Moneda</th>
+            <th>Método de Pago</th>
+            <th>Estado del Pago</th>
+            <th>Fecha de Creación</th>
           </tr>
         </thead>
         <tbody>
           {payments.map((payment) => (
-            <tr key={payment.id} onClick={() => openPaymentDetail(payment)} className="cursor-pointer hover:bg-gray-100">
-              <td className="px-6 py-4 whitespace-no-wrap border-b border-gray-200">{payment.accountId}</td>
-              <td className="px-6 py-4 whitespace-no-wrap border-b border-gray-200">{payment.reference}</td>
-              <td className="px-6 py-4 whitespace-no-wrap border-b border-gray-200">{payment.amount}</td>
-              <td className="px-6 py-4 whitespace-no-wrap border-b border-gray-200">{payment.currency}</td>
-              <td className="px-6 py-4 whitespace-no-wrap border-b border-gray-200">{payment.paymentGateway}</td>
-              <td className="px-6 py-4 whitespace-no-wrap border-b border-gray-200">{payment.status}</td>
-              <td className="px-6 py-4 whitespace-no-wrap border-b border-gray-200">{formatDate(payment.createdAt)}</td>
+            <tr key={payment.id} className={styles.row}>
+              <td>
+                <input
+                  type="checkbox"
+                  checked={selectedPayments.includes(payment.accountId)}
+                  onChange={() => handleCheckboxChange(payment.accountId)}
+                />
+              </td>
+              <td>{payment.accountId}</td>
+              <td>{payment.reference}</td>
+              <td>{payment.amount}</td>
+              <td>{payment.currency}</td>
+              <td>{payment.paymentGateway}</td>
+              <td>{payment.status}</td>
+              <td>{formatDate(payment.createdAt)}</td>
             </tr>
           ))}
         </tbody>
       </table>
-      <div className="mt-4 flex justify-between items-center">
-        <button 
-          onClick={handlePrevPage} 
+
+      <div className={styles.pagination}>
+        <button
+          onClick={handlePrevPage}
           disabled={page === 1}
-          className="px-4 py-2 border border-transparent text-sm leading-5 font-medium rounded-md text-white bg-blue-600 hover:bg-blue-500 focus:outline-none focus:border-blue-700 focus:shadow-outline-blue active:bg-blue-700 transition ease-in-out duration-150"
+          className={styles.paginationButton}
         >
           Anterior
         </button>
-        <span>Página {page} de {Math.ceil(totalPayments / limit)}</span>
-        <button 
-          onClick={handleNextPage} 
+        <span className={styles.pageInfo}>Página {page} de {Math.ceil(totalPayments / limit)}</span>
+        <button
+          onClick={handleNextPage}
           disabled={page >= Math.ceil(totalPayments / limit)}
-          className="px-4 py-2 border border-transparent text-sm leading-5 font-medium rounded-md text-white bg-blue-600 hover:bg-blue-500 focus:outline-none focus:border-blue-700 focus:shadow-outline-blue active:bg-blue-700 transition ease-in-out duration-150"
+          className={styles.paginationButton}
         >
           Siguiente
         </button>
       </div>
 
-      {isModalOpen && selectedPayment && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full" onClick={closePaymentDetail}>
-          <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white" onClick={e => e.stopPropagation()}>
-            <div className="mt-3 text-center">
-              <h3 className="text-lg leading-6 font-medium text-gray-900">Detalle del Pago</h3>
-              <div className="mt-2 px-7 py-3">
-                <p className="text-sm text-gray-500">ID: {selectedPayment.id}</p>
-                <p className="text-sm text-gray-500">Cuenta: {selectedPayment.accountId}</p>
-                <p className="text-sm text-gray-500">Referencia: {selectedPayment.reference}</p>
-                <p className="text-sm text-gray-500">Monto: {selectedPayment.amount} {selectedPayment.currency}</p>
-                <p className="text-sm text-gray-500">Monto Usado: {selectedPayment.usedAmount} {selectedPayment.currency}</p>
-                <p className="text-sm text-gray-500">Estado: {selectedPayment.status}</p>
-                <p className="text-sm text-gray-500">País: {selectedPayment.countryCodeGateway}</p>
-                <p className="text-sm text-gray-500">Método de Pago: {selectedPayment.paymentGateway}</p>
-                <p className="text-sm text-gray-500">Número de Referencia: {selectedPayment.paymentGatewayData.referenceNumber}</p>
-                <p className="text-sm text-gray-500">Número de Teléfono: {selectedPayment.paymentGatewayData.phoneNumber}</p>
-                <p className="text-sm text-gray-500">Creado: {formatDate(selectedPayment.createdAt)}</p>
-                <p className="text-sm text-gray-500">Actualizado: {formatDate(selectedPayment.updatedAt)}</p>
-              </div>
-              <div className="items-center px-4 py-3">
-                <button
-                  onClick={closePaymentDetail}
-                  className="px-4 py-2 bg-blue-500 text-white text-base font-medium rounded-md w-full shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-300"
-                >
-                  Cerrar
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      <div className={styles.totalAmount}>
+        <h2>Total seleccionado: {totalSelectedAmount}</h2>
+      </div>
     </div>
   );
-})
+});

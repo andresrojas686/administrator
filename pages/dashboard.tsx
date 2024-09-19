@@ -47,16 +47,16 @@ const PaginaProtegida = () => {
 
           <Link href="/admin/pending-payments" passHref>
             <div className="card"  >
-              <h3>Payments;</h3>
+              <h3>Payments</h3>
               <p>Pending Payments</p>
             </div>
           </Link>
 
-          <Link href="https://vercel.com/new?utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app" passHref>
+          <Link href="#" passHref>
             <div className="card"  >
-              <h3>Deploy &rarr;</h3>
+              <h3>Jhonatan</h3>
               <p>
-                Instantly deploy your Next.js site to a public URL with Vercel.
+                opcional
               </p>
             </div>
           </Link>
