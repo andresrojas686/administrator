@@ -37,9 +37,10 @@ export default withAuth(function PendingPayments() {
   const [page, setPage] = useState(1);
   const [selectedPayments, setSelectedPayments] = useState<string[]>([]);
   const [totalSelectedAmount, setTotalSelectedAmount] = useState(0);
-  const limit = 15;
+  const limit = 20;
 
-  const { data, error } = useSWR<PaymentsResponse>(`/api/admin/payments?page=${page}&limit=${limit}`, fetcher);
+  // const { data, error } = useSWR<PaymentsResponse>(`/api/admin/payments?page=${page}&limit=${limit}`, fetcher);
+  const { data, error } = useSWR<PaymentsResponse>(`/api/admin/payments?page=${page}&limit=${limit}&order=desc`, fetcher);
 
   const handlePrevPage = () => setPage((p) => Math.max(1, p - 1));
   const handleNextPage = () => setPage((p) => p + 1);
