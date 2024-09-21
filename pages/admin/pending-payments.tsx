@@ -3,7 +3,7 @@ import useSWR from 'swr';
 import withAuth from '../../components/withAuth';
 import { useAuth } from '../../contexts/AuthContext';
 import { useRouter } from 'next/router';
-import styles from '../styles/PendingPayments.module.css'; // Nuevo archivo de estilos
+import styles from '../styles/PendingPayments.module.css';
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
@@ -39,7 +39,6 @@ export default withAuth(function PendingPayments() {
   const [totalSelectedAmount, setTotalSelectedAmount] = useState(0);
   const limit = 20;
 
-  // const { data, error } = useSWR<PaymentsResponse>(`/api/admin/payments?page=${page}&limit=${limit}`, fetcher);
   const { data, error } = useSWR<PaymentsResponse>(`/api/admin/payments?page=${page}&limit=${limit}&order=desc`, fetcher);
 
   const handlePrevPage = () => setPage((p) => Math.max(1, p - 1));
@@ -49,17 +48,91 @@ export default withAuth(function PendingPayments() {
     return new Date(dateString).toLocaleString();
   };
 
-  const handleCheckboxChange = (accountId: string) => {
-    const selectedAccountPayments = data?.payments.filter(payment => payment.accountId === accountId) || [];
+  // const handleCheckboxChange = (accountId: string) => {
+  //   const selectedAccountPayments = data?.payments.filter(payment => payment.accountId === accountId) || [];
 
-    if (selectedPayments.includes(accountId)) {
-      setSelectedPayments((prev) => prev.filter(id => id !== accountId));
-      const deselectedAmount = selectedAccountPayments.reduce((sum, payment) => sum + payment.amount, 0);
-      setTotalSelectedAmount((prev) => prev - deselectedAmount);
+  //   if (selectedPayments.includes(accountId)) {
+  //     setSelectedPayments((prev) => prev.filter(id => id !== accountId));
+  //     const deselectedAmount = selectedAccountPayments.reduce((sum, payment) => sum + payment.amount, 0);
+  //     setTotalSelectedAmount((prev) => prev - deselectedAmount);
+  //   } else {
+  //     setSelectedPayments((prev) => [...prev, accountId]);
+  //     const selectedAmount = selectedAccountPayments.reduce((sum, payment) => sum + payment.amount, 0);
+  //     setTotalSelectedAmount((prev) => prev + selectedAmount);
+  //   }
+  // };
+  const handleCheckboxChange = (paymentId: string, accountId: string) => {
+    const accountPayments = data?.payments.filter(payment => payment.accountId === accountId) || [];
+
+    if (selectedPayments.includes(paymentId)) {
+      // Deseleccionar solo el pago clicado
+      setSelectedPayments(prev => prev.filter(id => id !== paymentId));
+      const deselectedAmount = accountPayments.find(payment => payment.id === paymentId)?.amount || 0;
+      setTotalSelectedAmount(prev => prev - deselectedAmount);
+
+      // Si todos los pagos de la cuenta fueron deseleccionados, habilitamos otros pagos
+      if (selectedPayments.length === 1) {
+        setDisabledAccounts([]);
+      }
     } else {
-      setSelectedPayments((prev) => [...prev, accountId]);
-      const selectedAmount = selectedAccountPayments.reduce((sum, payment) => sum + payment.amount, 0);
-      setTotalSelectedAmount((prev) => prev + selectedAmount);
+      // Si no se ha seleccionado ningún pago de otra cuenta
+      const firstAccountSelected = selectedPayments.length === 0;
+
+      if (firstAccountSelected || disabledAccounts.includes(accountId)) {
+        const newSelectedPayments = [
+          ...selectedPayments,
+          ...accountPayments.filter(payment => !selectedPayments.includes(payment.id)).map(payment => payment.id)
+        ];
+        const totalAmount = accountPayments.reduce((sum, payment) =>
+          selectedPayments.includes(payment.id) ? sum : sum + payment.amount, 0);
+        setSelectedPayments(newSelectedPayments);
+        setTotalSelectedAmount(prev => prev + totalAmount);
+
+        // Deshabilitar pagos de otras cuentas
+        setDisabledAccounts([accountId]);
+      }
+    }
+  };
+
+  const [disabledAccounts, setDisabledAccounts] = useState<string[]>([]);
+
+
+  const handleSubmit = async () => {
+    if (selectedPayments.length === 0) return; // Asegurarse de que haya pagos seleccionados
+
+    const selectedPaymentDetails = data?.payments.filter(payment => selectedPayments.includes(payment.accountId)) || [];
+    const paymentReferences = selectedPaymentDetails.map(payment => payment.reference);
+    const totalAmount = totalSelectedAmount;
+
+    //log para validar los datos que vamos a enviar
+    // console.log('Datos enviados para la suscripción:', {
+    //   accountId: selectedPayments[0],
+    //   // references: selectedPayments.map(payment => payment.reference),
+    //   references: paymentReferences,
+    //   totalAmount: totalSelectedAmount,
+    // });
+    // console.log('referencias:', paymentReferences);
+
+    const response = await fetch('/api/admin/payments/selected', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        accountId: selectedPayments[0], // Enviamos solo el primer ID de cuenta
+        references: paymentReferences,
+        totalAmount: totalAmount,
+      }),
+    });
+
+    if (response.ok) {
+      // Manejar la respuesta en caso de éxito
+      const result = await response.json();
+      console.log('Suscripción creada con éxito:', result);
+      router.push('/subscriptions'); // Redireccionar a la página de suscripciones
+    } else {
+      // Manejar el error
+      console.error('Error al crear la suscripción');
     }
   };
 
@@ -94,14 +167,16 @@ export default withAuth(function PendingPayments() {
             <th>Fecha de Creación</th>
           </tr>
         </thead>
+
         <tbody>
           {payments.map((payment) => (
             <tr key={payment.id} className={styles.row}>
               <td>
                 <input
                   type="checkbox"
-                  checked={selectedPayments.includes(payment.accountId)}
-                  onChange={() => handleCheckboxChange(payment.accountId)}
+                  checked={selectedPayments.includes(payment.id)} // Verificamos si el pago está seleccionado
+                  onChange={() => handleCheckboxChange(payment.id, payment.accountId)} // Pasamos el payment.id y el accountId
+                  disabled={disabledAccounts.length > 0 && !disabledAccounts.includes(payment.accountId)} // Deshabilitamos pagos de otras cuentas
                 />
               </td>
               <td>{payment.accountId}</td>
@@ -114,6 +189,8 @@ export default withAuth(function PendingPayments() {
             </tr>
           ))}
         </tbody>
+
+
       </table>
 
       <div className={styles.pagination}>
@@ -137,6 +214,10 @@ export default withAuth(function PendingPayments() {
       <div className={styles.totalAmount}>
         <h2>Total seleccionado: {totalSelectedAmount}</h2>
       </div>
+
+      <button onClick={handleSubmit} className={styles.submitButton}>
+        Enviar Pagos Seleccionados
+      </button>
     </div>
   );
 });

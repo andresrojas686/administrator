@@ -6,14 +6,18 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   try {
     let url;
     if (id) {
+      // Si se proporciona un ID, buscamos un pago específico
       url = `${process.env.PAYMENTS_URL}/${id}`;
     } else {
-      url = `${process.env.PAYMENTS_URL}?status=pending&page=${page}&limit=${limit}&order=desc&sort=createdAt`; // Ordenar por createdAt
+      // Si no se proporciona un ID, obtenemos los pagos pendientes
+      url = `${process.env.PAYMENTS_URL}?status=pending&page=${page}&limit=${limit}&order=${order}&sort=createdAt`; // Ordenar por createdAt
     }
 
+    // Realizamos la petición a la API de pagos
     const response = await fetch(url);
     const data = await response.json();
 
+    // Enviamos la respuesta al cliente
     res.status(200).json(data);
   } catch (error) {
     console.error('Error fetching payments:', error);
