@@ -74,6 +74,7 @@ export default withAuth(function PendingPayments() {
       if (selectedPayments.length === 1) {
         setDisabledAccounts([]);
       }
+      //console.log('Pagos seleccionados después del cambio:', selectedPayments);
     } else {
       // Si no se ha seleccionado ningún pago de otra cuenta
       const firstAccountSelected = selectedPayments.length === 0;
@@ -100,19 +101,18 @@ export default withAuth(function PendingPayments() {
   const handleSubmit = async () => {
     if (selectedPayments.length === 0) return; // Asegurarse de que haya pagos seleccionados
 
-    const selectedPaymentDetails = data?.payments.filter(payment => selectedPayments.includes(payment.accountId)) || [];
+    //const selectedPaymentDetails = data?.payments.filter(payment => selectedPayments.includes(payment.accountId)) || [];
+    
+    const selectedPaymentDetails = data?.payments.filter(payment => selectedPayments.includes(payment.id)) || [];
     const paymentReferences = selectedPaymentDetails.map(payment => payment.reference);
     const totalAmount = totalSelectedAmount;
 
-    //log para validar los datos que vamos a enviar
-    // console.log('Datos enviados para la suscripción:', {
-    //   accountId: selectedPayments[0],
-    //   // references: selectedPayments.map(payment => payment.reference),
-    //   references: paymentReferences,
-    //   totalAmount: totalSelectedAmount,
-    // });
-    // console.log('referencias:', paymentReferences);
-
+    console.log('Datos enviados para la suscripción:', {
+      accountId: selectedPayments[0], // Enviamos solo el primer ID de cuenta
+      references: paymentReferences,
+      totalAmount: totalAmount,
+    });
+    // debugger;
     const response = await fetch('/api/admin/payments/selected', {
       method: 'POST',
       headers: {
