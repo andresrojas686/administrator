@@ -19,6 +19,15 @@
     color: #333;
     font-weight: bold;
   }
+  .loginButton {
+    padding: 10px 20px;
+    background-color: #1877f2;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+  }
   
   .logoutButton {
     background-color: #ff4d4f;

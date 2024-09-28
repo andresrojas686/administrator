@@ -7,6 +7,7 @@ import client from "../lib/mongodb";
 import styles from './styles/estilistas.module.css';
 import { ObjectId } from 'mongodb';
 import React, { useState } from 'react';
+import Link from "next/link";
 
 
 interface Document {
@@ -47,12 +48,12 @@ const ListadoStylistPage: React.FC<ListadoStylistPageProps> = ({ estilistas }) =
         setSelectedDocument(null);
         router.reload();
     };
-    
+
 
     // Función para aprobar el documento
     const handleApprove = async () => {
         if (!selectedDocument) return;
-    
+
         try {
             const response = await fetch('/api/updateDocumentStatus', {
                 method: 'PUT',
@@ -64,7 +65,7 @@ const ListadoStylistPage: React.FC<ListadoStylistPageProps> = ({ estilistas }) =
                     status: 'Approved',
                 }),
             });
-    
+
             if (response.ok) {
                 setSelectedDocument({
                     ...selectedDocument,
@@ -79,7 +80,7 @@ const ListadoStylistPage: React.FC<ListadoStylistPageProps> = ({ estilistas }) =
             console.error('Error:', error);
         }
     };
-    
+
     const handleReject = async () => {
         try {
             const response = await fetch('/api/updateDocumentStatus', {
@@ -92,16 +93,16 @@ const ListadoStylistPage: React.FC<ListadoStylistPageProps> = ({ estilistas }) =
                     status: 'Rejected',
                 }),
             });
-    
+
             if (response.ok) {
                 // Actualiza el estado del documento en la interfaz
                 setSelectedDocument({
                     ...selectedDocument,
-                    documentStatus: 'Approved',
+                    documentStatus: 'Rejected',
                     documentUrl: selectedDocument?.documentUrl || '', // Valor predeterminado para documentUrl
                     stylistId: selectedDocument?.stylistId || '', // Proveer un valor predeterminado para stylistId
                 });
-                
+
                 router.reload();
             } else {
                 console.error('Error actualizando el estado del documento');
@@ -125,6 +126,9 @@ const ListadoStylistPage: React.FC<ListadoStylistPageProps> = ({ estilistas }) =
             <div className={styles.container}>
                 <header className={styles.header}>
                     <h1 className={styles.title}>Listado de Estilistas y Documentos</h1>
+                    <Link href="/dashboard">
+                        <button className={styles.loginButton} >Dashboard</button>
+                    </Link>
                     <button className={styles.logoutButton} onClick={handleLogout}>Cerrar sesión</button>
                 </header>
                 <div className={styles.estilistasGrid}>
@@ -154,22 +158,22 @@ const ListadoStylistPage: React.FC<ListadoStylistPageProps> = ({ estilistas }) =
             {/* Modal para mostrar la información del documento */}
             {selectedDocument && (
                 <>{console.log("Mostrando modal para el documento:", selectedDocument)}
-                <div className={styles.modalOverlay}>
-                    <div className={styles.modalContent}>
-                        <h2>{selectedDocument.tag}</h2>
-                        <img src={selectedDocument.documentUrl} alt="Documento" />
-                        <p>Estado: {selectedDocument.documentStatus}</p>
+                    <div className={styles.modalOverlay}>
+                        <div className={styles.modalContent}>
+                            <h2>{selectedDocument.tag}</h2>
+                            <img src={selectedDocument.documentUrl} alt="Documento" />
+                            <p>Estado: {selectedDocument.documentStatus}</p>
 
-                        {selectedDocument.documentStatus === 'Pending' && (
-                            <div>
-                                <button onClick={handleApprove}>Aprobar</button>
-                                <button onClick={handleReject}>Rechazar</button>
-                            </div>
-                        )}
+                            {selectedDocument.documentStatus === 'Pending' && (
+                                <div>
+                                    <button onClick={handleApprove}>Aprobar</button>
+                                    <button onClick={handleReject}>Rechazar</button>
+                                </div>
+                            )}
 
-                        <button onClick={closeModal}>Cerrar</button>
+                            <button onClick={closeModal}>Cerrar</button>
+                        </div>
                     </div>
-                </div>
                 </>
             )}
         </>
@@ -185,6 +189,10 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
         // Obtener estilistas
         const estilistasDocs = await db.collection('stylist').find({}).toArray();
 
+        // console.log('###########################');
+        // console.log('estilistasDocs:', estilistasDocs);
+
+
         // Para cada estilista, obtener sus documentos relacionados
         const estilistasConDocumentos = await Promise.all(estilistasDocs.map(async (estilista: any) => {
             const stylistObjectId = new ObjectId(estilista._id);
@@ -193,6 +201,8 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
             const documents = await db.collection('stylistdocumentmoderations')
                 .find({ stylistId: stylistObjectId })
                 .toArray();
+            // console.log('###########################');
+            // console.log('Documents:', documents);
 
             return {
                 ...estilista,
@@ -219,10 +229,8 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
                 error: 'Hubo un error al obtener los datos. Por favor, intente más tarde.'
             },
         };
-    } 
-    // finally {
-    //     // await client.close();
-    // }
+    }
+
 };
 
 export default withAuth(ListadoStylistPage);

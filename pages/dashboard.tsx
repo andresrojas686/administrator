@@ -18,12 +18,12 @@ const PaginaProtegida = () => {
 
   return (
     <>
-    <Head>
+      <Head>
         <title>E-GO</title>
         <link rel="icon" href="/favicon.ico" />
       </Head>
       <header className={styles2.header}>
-        <h1 className={styles2.title}>Dashboard</h1>
+        <h1 className={styles2.title}>Dashboard</h1>        
         <button className={styles2.logoutButton} onClick={handleLogout}>
           Cerrar sesión
         </button>

@@ -6,6 +6,7 @@ import { useAuth } from '../contexts/AuthContext';
 import clientPromise from "../lib/mongodb";
 import styles from './styles/estilistas.module.css';
 import { useEffect } from "react";
+import Link from "next/link";
 
 interface Estilista {
   _id: string;
@@ -55,6 +56,9 @@ const EstilistasPage: React.FC<EstilistasPageProps> = ({ estilistas }) => {
       <div className={styles.container}>
         <header className={styles.header}>
           <h1 className={styles.title}>Lista de Estilistas</h1>
+          <Link href="/dashboard">
+          <button className={styles.loginButton} >Dashboard</button>
+        </Link>
           <button className={styles.logoutButton} onClick={handleLogout}>
             Cerrar sesión
           </button>
