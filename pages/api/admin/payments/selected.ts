@@ -5,6 +5,7 @@ import { serialize } from 'cookie';
 const PLANS_URL = process.env.PLANS_URL || '';
 const PLANS_COUNTRY = process.env.PLANS_COUNTRY || '';
 const PLAN_CONCURRENCY = process.env.PLAN_CONCURRENCY || '';
+const PAYMENTS_URL = process.env.PAYMENTS_URL || ''; // URL para actualizar los pagos
 
 // Definimos la estructura esperada de los precios dentro de cada plan
 interface Price {
@@ -24,21 +25,34 @@ interface Plan {
 }
 
 // Función para actualizar el estado de los pagos
-const updatePaymentStatus = async (paymentId: string, status: string, balance?: number) => {
+const updatePaymentStatus = async (paymentId: string, usedAmount: number, status: string) => {
   try {
-    // Suponemos que tienes un endpoint para actualizar pagos
-    const updatePaymentURL = `http://127.0.0.1:3001/admin/api/payments/${paymentId}`;
-    const response = await fetch(updatePaymentURL, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status, balance })
+    // Usamos la URL de pagos desde la variable de entorno
+    const updatePaymentURL = `${PAYMENTS_URL}/${paymentId}`;
+
+    console.log("la url de actualizacion es ", updatePaymentURL);
+
+    // Detenemos la ejecución aquí con un console.log y devolvemos la información
+    console.log("Actualizando el estado del pago con los siguientes datos:");
+    console.log({
+      paymentId,
+      usedAmount,
+      status
     });
-    console.log("El programa se detendrá ahora.");
-    process.exit(0);  
+
+    const response = await fetch(updatePaymentURL, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ usedAmount, status }),
+      
+    });
+    console.log('--##-- body --##--', JSON.stringify({ usedAmount, status }));
 
     if (!response.ok) {
-      throw new Error('Error al actualizar el estado del pago');
+      const errorDetails = await response.text(); // Capturamos los detalles de la respuesta
+      throw new Error(`+++##+++ Error al actualizar el estado del pago: ${errorDetails}`);
     }
+    console.log('Estado del pago actualizado correctamente');
   } catch (error) {
     console.error('Error al actualizar el estado del pago:', error);
   }
@@ -55,6 +69,10 @@ const createSubscription = async (accountId: string, plan: string, paymentRefere
     countryCode: PLANS_COUNTRY,
     paymentReferences
   };
+
+  console.log("Creando la suscripción con los siguientes datos:");
+  console.log(subscriptionBody);
+  return;
 
   const response = await fetch(createSubscriptionURL, {
     method: 'POST',
@@ -99,19 +117,34 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         return res.status(400).json({ error: 'No hay planes disponibles que se ajusten al total de pagos.' });
       }
 
-      // Crear la suscripción con el plan seleccionado
-      await createSubscription(accountId, selectedPlan.name, references);
+      console.log('Plan seleccionado:', selectedPlan);
 
-      // Actualizar el estado de los pagos seleccionados
+      // Actualizar el estado de los pagos seleccionados antes de crear la suscripción
       let remainingBalance = totalAmount;
-      for (const payment of references) {
+      console.log('remainingBalance', remainingBalance); 
+
+      for (const payment of payments) {
         if (remainingBalance > 0) {
-          // Actualizar el estado a "Applied" o "Partially Applied" según el saldo restante
-          const paymentStatus = remainingBalance >= totalAmount ? 'Applied' : 'Partially Applied';
-          await updatePaymentStatus(payment, paymentStatus, remainingBalance);
-          remainingBalance -= totalAmount;  // Ajustar el saldo restante
+          // Actualizamos el pago con el balance utilizado y el estado correspondiente
+          //const usedAmount = remainingBalance >= payment.amount ? payment.amount : remainingBalance;
+          const usedAmount = selectedPlan.prices[0].price;
+          const paymentStatus = remainingBalance >= payment.amount ? 'Applied' : 'partiallyApplied';
+
+          console.log('payments', payment);
+          console.log('usedAmount', usedAmount);
+          console.log('paymentStatus', paymentStatus);
+
+          // Actualizamos el pago con la información correcta
+          await updatePaymentStatus(payment, usedAmount, paymentStatus);
+
+          //el remainingBalance quedaria con el saldo a favor, pero en este punto es inutil
+          remainingBalance -= usedAmount; // informativo
+          console.log('remainingBalance 2', remainingBalance); 
         }
       }
+
+      // Ahora que los pagos han sido actualizados, creamos la suscripción
+      await createSubscription(accountId, selectedPlan.name, references);
 
       // Redireccionar a la página de suscripciones con un mensaje de éxito
       res.setHeader('Set-Cookie', [

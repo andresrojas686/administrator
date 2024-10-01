@@ -11,8 +11,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     } else {
       // Si no se proporciona un ID, obtenemos los pagos pendientes
       // url = `${process.env.PAYMENTS_URL}?page=${page}&limit=${limit}&order=${order}&sort=createdAt`; // Ordenar por createdAt
-      const status = 'pending'; // Filtramos por estatus 'pending' y 'partially applied'
-      url = `${process.env.PAYMENTS_URL}?status=${status}&page=${page}&limit=${limit}&order=${order}&sort=createdAt`; // Ordenar por createdAt
+      // const status = "'pending, partially applied'"; // Filtramos por estatus 'pending' y 'partially applied'
+      url = `${process.env.PAYMENTS_URL}?status=pending&status=partiallyApplied&page=${page}&limit=${limit}&order=${order}&sort=createdAt`; // Ordenar por createdAt
+    console.log(url);
     }
 
     // Realizamos la petición a la API de pagos

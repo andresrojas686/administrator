@@ -125,7 +125,7 @@ export default withAuth(function PendingPayments() {
       // Manejar la respuesta en caso de éxito
       const result = await response.json();
       console.log('Suscripción creada con éxito:', result);
-      router.push('/subscriptions'); // Redireccionar a la página de suscripciones
+      //router.push('/subscriptions'); // Redireccionar a la página de suscripciones
     } else {
       // Manejar el error
       console.error('Error al crear la suscripción');
