@@ -52,33 +52,37 @@ export default withAuth(function PendingPayments() {
 
   const handleCheckboxChange = (paymentId: string, accountId: string) => {
     const accountPayments = data?.payments.filter(payment => payment.accountId === accountId) || [];
-
+  
     if (selectedPayments.includes(paymentId)) {
       // Deseleccionar solo el pago clicado
       setSelectedPayments(prev => prev.filter(id => id !== paymentId));
-      const deselectedAmount = accountPayments.find(payment => payment.id === paymentId)?.amount || 0;
+      
+      // Restamos el valor disponible del pago deseleccionado
+      const deselectedAmount = accountPayments.find(payment => payment.id === paymentId)
+        ? accountPayments.find(payment => payment.id === paymentId)!.amount - accountPayments.find(payment => payment.id === paymentId)!.usedAmount
+        : 0;
+  
       setTotalSelectedAmount(prev => prev - deselectedAmount);
-
-      // Si todos los pagos de la cuenta fueron deseleccionados, habilitamos otros pagos
+  
       if (selectedPayments.length === 1) {
         setDisabledAccounts([]);
       }
-      //console.log('Pagos seleccionados después del cambio:', selectedPayments);
     } else {
-      // Si no se ha seleccionado ningún pago de otra cuenta
       const firstAccountSelected = selectedPayments.length === 0;
-
+  
       if (firstAccountSelected || disabledAccounts.includes(accountId)) {
         const newSelectedPayments = [
           ...selectedPayments,
           ...accountPayments.filter(payment => !selectedPayments.includes(payment.id)).map(payment => payment.id)
         ];
+        // Sumamos el monto disponible (amount - usedAmount)
         const totalAmount = accountPayments.reduce((sum, payment) =>
-          selectedPayments.includes(payment.id) ? sum : sum + payment.amount, 0);
+          selectedPayments.includes(payment.id)
+            ? sum
+            : sum + (payment.amount - payment.usedAmount), 0);
         setSelectedPayments(newSelectedPayments);
         setTotalSelectedAmount(prev => prev + totalAmount);
-
-        // Deshabilitar pagos de otras cuentas
+  
         setDisabledAccounts([accountId]);
       }
     }
@@ -96,13 +100,16 @@ export default withAuth(function PendingPayments() {
     const paymentReferences = selectedPaymentDetails.map(payment => payment.reference);
     const paymentIds = selectedPaymentDetails.map(payment => payment.id);
     const accountIds = selectedPaymentDetails.map(payment => payment.accountId);
+    const paymentAvailableAmounts = selectedPaymentDetails.map(payment => payment.amount - payment.usedAmount); // Montos disponibles
     const totalAmount = totalSelectedAmount;
 
-    console.log('Datos enviados para la suscripción:', {
+    console.log('Datos enviados desde pending:', {
       accountId: accountIds[0], // Enviamos solo el primer ID de cuenta
       references: paymentReferences,
       payments: paymentIds,
+      paymentAvailableAmounts: paymentAvailableAmounts,
       totalAmount: totalAmount,
+
     });
     // debugger;
     const response = await fetch('/api/admin/payments/selected', {
@@ -114,6 +121,7 @@ export default withAuth(function PendingPayments() {
         accountId: accountIds[0], // Enviamos solo el primer ID de cuenta
         references: paymentReferences,
         payments: paymentIds,
+        paymentAvailableAmounts: paymentAvailableAmounts,
         totalAmount: totalAmount,
       }),
     });
@@ -228,7 +236,7 @@ export default withAuth(function PendingPayments() {
         <h2>Total seleccionado: {totalSelectedAmount}</h2>
       </div>
 
-      <button onClick={handleSubmit} className={styles.submitButton}>
+      <button onClick={handleSubmit} className={styles.submitButton} disabled={selectedPayments.length === 0}>
         Enviar Pagos Seleccionados
       </button>
     </div>

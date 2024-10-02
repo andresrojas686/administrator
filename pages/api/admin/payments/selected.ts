@@ -44,7 +44,7 @@ const updatePaymentStatus = async (paymentId: string, usedAmount: number, status
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ usedAmount, status }),
-      
+
     });
     console.log('--##-- body --##--', JSON.stringify({ usedAmount, status }));
 
@@ -52,12 +52,14 @@ const updatePaymentStatus = async (paymentId: string, usedAmount: number, status
       const errorDetails = await response.text(); // Capturamos los detalles de la respuesta
       throw new Error(`+++##+++ Error al actualizar el estado del pago: ${errorDetails}`);
     }
+    //pago update ok
     console.log('Estado del pago actualizado correctamente');
   } catch (error) {
     console.error('Error al actualizar el estado del pago:', error);
   }
 };
 
+/*
 // Función para crear la suscripción
 const createSubscription = async (accountId: string, plan: string, paymentReferences: string[]) => {
   const createSubscriptionURL = `http://127.0.0.1:3001/admin/api/subscriptions/${accountId}`;
@@ -75,7 +77,7 @@ const createSubscription = async (accountId: string, plan: string, paymentRefere
   return;
 
   const response = await fetch(createSubscriptionURL, {
-    method: 'POST',
+    method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(subscriptionBody)
   });
@@ -87,13 +89,14 @@ const createSubscription = async (accountId: string, plan: string, paymentRefere
   const data = await response.json();
   return data;
 };
+*/
 
 // Handler principal
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method === 'POST') {
-    const { accountId, references, payments, totalAmount } = req.body;
+    const { accountId, references, payments, totalAmount, paymentAvailableAmounts } = req.body;
 
-    console.log('Datos recibidos:', { accountId, references, payments, totalAmount });
+    console.log('Datos recibidos en selected.ts:', { accountId, references, payments, totalAmount, paymentAvailableAmounts });
 
     try {
       // Construir la URL con los parámetros para obtener los planes
@@ -115,33 +118,72 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       if (!selectedPlan) {
         console.log('No hay planes disponibles que se ajusten al total de pagos.');
         return res.status(400).json({ error: 'No hay planes disponibles que se ajusten al total de pagos.' });
+      } else {
+        console.log('Plan seleccionado Correctamente');
+        // console.log('Plan seleccionado:', selectedPlan);
       }
 
-      console.log('Plan seleccionado:', selectedPlan);
+      // el totalAmount es la suma de los pagos
+      let remainingBalance = totalAmount||0;
+      // console.log('remainingBalance', remainingBalance); 
+      // let remainingBalance = selectedPlan.prices[0].price || 0;
+      console.log('remainingBalance inicial:', remainingBalance);
+      console.log('Valor del plan seleccionado:', selectedPlan.prices[0].price || 0);
 
-      // Actualizar el estado de los pagos seleccionados antes de crear la suscripción
-      let remainingBalance = totalAmount;
-      console.log('remainingBalance', remainingBalance); 
+    
+      for (let i = 0; i < payments.length; i++) {
+        const payment = payments[i];
+        let usedAmount = 0;
+        let paymentStatus = '';
 
-      for (const payment of payments) {
-        if (remainingBalance > 0) {
-          // Actualizamos el pago con el balance utilizado y el estado correspondiente
-          //const usedAmount = remainingBalance >= payment.amount ? payment.amount : remainingBalance;
-          const usedAmount = selectedPlan.prices[0].price;
-          const paymentStatus = remainingBalance >= payment.amount ? 'Applied' : 'partiallyApplied';
+        console.log('payment  -->', payment);
 
-          console.log('payments', payment);
-          console.log('usedAmount', usedAmount);
-          console.log('paymentStatus', paymentStatus);
+        // Validamos que payment.amount sea un número y no undefined
+        if (typeof payment.amount !== 'number' || isNaN(payment.amount)) {
+          console.error('El monto del pago no es válido:', payment.amount);
+          continue; // Saltamos a la siguiente iteración si el monto es inválido
+        }
 
-          // Actualizamos el pago con la información correcta
-          await updatePaymentStatus(payment, usedAmount, paymentStatus);
 
-          //el remainingBalance quedaria con el saldo a favor, pero en este punto es inutil
-          remainingBalance -= usedAmount; // informativo
-          console.log('remainingBalance 2', remainingBalance); 
+        if (remainingBalance >= payment.amount) {
+          usedAmount = payment.amount;
+          paymentStatus = 'Applied';
+        } else {
+          if (i === payments.length - 1) {
+            usedAmount = remainingBalance;
+            paymentStatus = 'partiallyApplied';
+          } else {
+            usedAmount = payment.amount;
+            paymentStatus = 'Applied';
+          }
+
+        }
+        console.log('payment id db', payment);
+        console.log('usedAmount', usedAmount);
+        console.log('paymentStatus', paymentStatus);
+
+        console.log(`Pago #${i} -> UsedAmount: ${usedAmount}, Status: ${paymentStatus}`);
+
+        // Validamos que el usedAmount sea válido
+        if (typeof usedAmount !== 'number' || isNaN(usedAmount) || usedAmount <= 0) {
+          console.error('Error: usedAmount no es válido:', usedAmount);
+          continue; // Saltamos este pago si usedAmount es inválido
+        }
+
+        console.log('Antes de actualizar pagos');
+        await updatePaymentStatus(payment, usedAmount, paymentStatus);
+
+        remainingBalance -= usedAmount;
+        console.log('remainingBalance después de actualizar el pago:', remainingBalance);
+
+        if (remainingBalance <= 0) {
+          console.log('entra en remainingBalance <= usedAmount');
+          break;
         }
       }
+
+      // return;//return para que no se cree la suscripción
+      /*
 
       // Ahora que los pagos han sido actualizados, creamos la suscripción
       await createSubscription(accountId, selectedPlan.name, references);
@@ -152,14 +194,18 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       ]);
 
       res.redirect(302, '/suscriptions');
-
+      */
     } catch (error) {
       console.error('Error:', error);
       return res.status(500).json({ error: 'Error al crear la suscripción' });
     }
 
-  } else {
-    res.setHeader('Allow', ['POST']);
-    res.status(405).end(`Method ${req.method} Not Allowed`);
+
+    // } else {
+    //   res.setHeader('Allow', ['POST']);
+    //   res.status(405).end(`Method ${req.method} Not Allowed`);
+    // }
+
   }
 }
+
