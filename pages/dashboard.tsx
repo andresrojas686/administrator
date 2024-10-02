@@ -52,11 +52,11 @@ const PaginaProtegida = () => {
             </div>
           </Link>
 
-          <Link href="#" passHref>
+          <Link href="/admin/pending-reviews" passHref>
             <div className="card"  >
-              <h3>Jhonatan</h3>
+              <h3>reviews</h3>
               <p>
-                opcional
+                administrador de reviews
               </p>
             </div>
           </Link>
