@@ -29,7 +29,6 @@ const updatePaymentStatus = async (paymentId: string, usedAmount: number, status
   try {
     // Usamos la URL de pagos desde la variable de entorno
     const updatePaymentURL = `${PAYMENTS_URL}/${paymentId}`;
-
     console.log("la url de actualizacion es ", updatePaymentURL);
 
     // Detenemos la ejecución aquí con un console.log y devolvemos la información
@@ -46,12 +45,14 @@ const updatePaymentStatus = async (paymentId: string, usedAmount: number, status
       body: JSON.stringify({ usedAmount, status }),
 
     });
+
     console.log('--##-- body --##--', JSON.stringify({ usedAmount, status }));
 
     if (!response.ok) {
       const errorDetails = await response.text(); // Capturamos los detalles de la respuesta
       throw new Error(`+++##+++ Error al actualizar el estado del pago: ${errorDetails}`);
     }
+
     //pago update ok
     console.log('Estado del pago actualizado correctamente');
   } catch (error) {
@@ -95,11 +96,11 @@ const createSubscription = async (accountId: string, plan: string, paymentRefere
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method === 'POST') {
     const { accountId, references, payments, totalAmount, paymentAvailableAmounts } = req.body;
-
+         
     console.log('Datos recibidos en selected.ts:', { accountId, references, payments, totalAmount, paymentAvailableAmounts });
 
     try {
-      // Construir la URL con los parámetros para obtener los planes
+      // Consultamos los planes disponibles
       const urlWithParams = `${PLANS_URL}?country=${PLANS_COUNTRY}&currency=${PLAN_CONCURRENCY}`;
       const response = await fetch(urlWithParams);
 
@@ -120,92 +121,61 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         return res.status(400).json({ error: 'No hay planes disponibles que se ajusten al total de pagos.' });
       } else {
         console.log('Plan seleccionado Correctamente');
-        // console.log('Plan seleccionado:', selectedPlan);
+        console.log('Plan seleccionado:', selectedPlan);
       }
+      
+      // Total amount inicial que representa el valor del plan
+      let remainingBalance = selectedPlan.prices[0].price || 0;
+      console.log('Total Pagos inicial:', remainingBalance);
 
-      // el totalAmount es la suma de los pagos
-      let remainingBalance = totalAmount||0;
-      // console.log('remainingBalance', remainingBalance); 
-      // let remainingBalance = selectedPlan.prices[0].price || 0;
-      console.log('remainingBalance inicial:', remainingBalance);
-      console.log('Valor del plan seleccionado:', selectedPlan.prices[0].price || 0);
+      // Array para almacenar las referencias de pago utilizadas
+      const usedReferences: string[] = [];
 
-    
+      // Iteramos sobre los pagos
       for (let i = 0; i < payments.length; i++) {
-        const payment = payments[i];
+        const paymentId = payments[i];
+        const availableAmount = paymentAvailableAmounts[i]; // El monto disponible de cada pago
+        const paymentReference = references[i];
+
+        console.log(`Procesando pago ${i}:`, { paymentId, availableAmount });
+
         let usedAmount = 0;
         let paymentStatus = '';
 
-        console.log('payment  -->', payment);
-
-        // Validamos que payment.amount sea un número y no undefined
-        if (typeof payment.amount !== 'number' || isNaN(payment.amount)) {
-          console.error('El monto del pago no es válido:', payment.amount);
-          continue; // Saltamos a la siguiente iteración si el monto es inválido
-        }
-
-
-        if (remainingBalance >= payment.amount) {
-          usedAmount = payment.amount;
+        if (remainingBalance >= availableAmount) {
+          usedAmount = availableAmount;
           paymentStatus = 'Applied';
         } else {
-          if (i === payments.length - 1) {
-            usedAmount = remainingBalance;
-            paymentStatus = 'partiallyApplied';
-          } else {
-            usedAmount = payment.amount;
-            paymentStatus = 'Applied';
-          }
-
+          usedAmount = remainingBalance; // Usamos lo que queda para cubrir el plan
+          paymentStatus = 'partiallyApplied';
         }
-        console.log('payment id db', payment);
-        console.log('usedAmount', usedAmount);
-        console.log('paymentStatus', paymentStatus);
 
         console.log(`Pago #${i} -> UsedAmount: ${usedAmount}, Status: ${paymentStatus}`);
 
-        // Validamos que el usedAmount sea válido
-        if (typeof usedAmount !== 'number' || isNaN(usedAmount) || usedAmount <= 0) {
-          console.error('Error: usedAmount no es válido:', usedAmount);
-          continue; // Saltamos este pago si usedAmount es inválido
-        }
+        // Actualizar el estado del pago
+        await updatePaymentStatus(paymentId, usedAmount, paymentStatus);
 
-        console.log('Antes de actualizar pagos');
-        await updatePaymentStatus(payment, usedAmount, paymentStatus);
-
-        remainingBalance -= usedAmount;
-        console.log('remainingBalance después de actualizar el pago:', remainingBalance);
+        remainingBalance -= usedAmount; // Descontamos el monto usado
+        console.log('Remaining balance después de actualizar el pago:', remainingBalance);
+        usedReferences.push(paymentReference);
 
         if (remainingBalance <= 0) {
-          console.log('entra en remainingBalance <= usedAmount');
-          break;
+          console.log('El plan ha sido completamente cubierto con los pagos.');
+          break; // Terminamos una vez que el plan ha sido cubierto
         }
       }
 
-      // return;//return para que no se cree la suscripción
-      /*
+      console.log('++++++++++++++++++++++++++++++++++++++++++++++++++');
+      console.log('###  Creamos suscripcion para cuenta ', accountId)
+      console.log('###  Nombre del plan ', selectedPlan.name)
+      console.log('###  referencias usadas ', usedReferences)
 
-      // Ahora que los pagos han sido actualizados, creamos la suscripción
-      await createSubscription(accountId, selectedPlan.name, references);
+      // Comentamos la creación de la suscripción
+      
 
-      // Redireccionar a la página de suscripciones con un mensaje de éxito
-      res.setHeader('Set-Cookie', [
-        serialize('message', 'Subscription created successfully!', { path: '/' }),
-      ]);
-
-      res.redirect(302, '/suscriptions');
-      */
     } catch (error) {
       console.error('Error:', error);
       return res.status(500).json({ error: 'Error al crear la suscripción' });
     }
-
-
-    // } else {
-    //   res.setHeader('Allow', ['POST']);
-    //   res.status(405).end(`Method ${req.method} Not Allowed`);
-    // }
-
   }
 }
-

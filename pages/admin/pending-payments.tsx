@@ -93,25 +93,25 @@ export default withAuth(function PendingPayments() {
 
   const handleSubmit = async () => {
     if (selectedPayments.length === 0) return; // Asegurarse de que haya pagos seleccionados
-
-    //const selectedPaymentDetails = data?.payments.filter(payment => selectedPayments.includes(payment.accountId)) || [];
-
+    
     const selectedPaymentDetails = data?.payments.filter(payment => selectedPayments.includes(payment.id)) || [];
     const paymentReferences = selectedPaymentDetails.map(payment => payment.reference);
     const paymentIds = selectedPaymentDetails.map(payment => payment.id);
     const accountIds = selectedPaymentDetails.map(payment => payment.accountId);
     const paymentAvailableAmounts = selectedPaymentDetails.map(payment => payment.amount - payment.usedAmount); // Montos disponibles
     const totalAmount = totalSelectedAmount;
+    
+    //ver en navegador:
+    // console.log('Datos a enviar desde pending:', {
+    //   accountId: accountIds[0], // Enviamos solo el primer ID de cuenta
+    //   references: paymentReferences,
+    //   payments: paymentIds,
+    //   paymentAvailableAmounts: paymentAvailableAmounts,
+    //   totalAmount: totalAmount,
 
-    console.log('Datos enviados desde pending:', {
-      accountId: accountIds[0], // Enviamos solo el primer ID de cuenta
-      references: paymentReferences,
-      payments: paymentIds,
-      paymentAvailableAmounts: paymentAvailableAmounts,
-      totalAmount: totalAmount,
-
-    });
+    // });
     // debugger;
+    try{
     const response = await fetch('/api/admin/payments/selected', {
       method: 'POST',
       headers: {
@@ -128,16 +128,15 @@ export default withAuth(function PendingPayments() {
 
     // console.log("El programa se detendrá ahora.");
     // process.exit(0);
-
-    if (response.ok) {
-      // Manejar la respuesta en caso de éxito
-      const result = await response.json();
-      console.log('Suscripción creada con éxito:', result);
-      //router.push('/subscriptions'); // Redireccionar a la página de suscripciones
-    } else {
+    
+    if (!response.ok) {
       // Manejar el error
-      console.error('Error al crear la suscripción');
+      console.error('Error al enviar los datos');
     }
+    
+  } catch (error) {
+    console.error('Error en handleSubmit:', error);
+  }
   };
 
   if (error) return <div className={styles.error}>Failed to load</div>;
