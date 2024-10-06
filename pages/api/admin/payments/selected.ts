@@ -22,6 +22,7 @@ interface Plan {
   country: string;
   prices: Price[];
   status: string;
+  durationType: string;
 }
 
 // Función para actualizar el estado de los pagos
@@ -60,37 +61,50 @@ const updatePaymentStatus = async (paymentId: string, usedAmount: number, status
   }
 };
 
-/*
-// Función para crear la suscripción
-const createSubscription = async (accountId: string, plan: string, paymentReferences: string[]) => {
-  const createSubscriptionURL = `http://127.0.0.1:3001/admin/api/subscriptions/${accountId}`;
+//creamos la suscripcion
+const createSubscription = async (accountId: string, planName: string, durationType: string, paymentReferences: string[]) => {
+  try {
+    // Construimos la URL del servicio para crear la suscripción
+    const subscriptionURL = `http://127.0.0.1:3001/admin/accounts/${accountId}/subscription`;
+    
+    // Definimos el cuerpo de la solicitud
+    const requestBody = {
+      plan: planName,
+      duration: 1, // Puedes ajustar esto según el valor real de duración
+      durationType: durationType,
+      countryCode: 'VEN', // Puedes ajustar el código de país si es necesario
+      paymentReferences: paymentReferences
+    };
 
-  const subscriptionBody = {
-    plan: "monthly",   // El plan se puede ajustar según tu lógica
-    duration: 6,       // Duración del plan
-    durationType: "month",
-    countryCode: PLANS_COUNTRY,
-    paymentReferences
-  };
+    console.log('-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*');
+    console.log('-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*');
+    console.log('-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*');
+    console.log('Enviando solicitud para crear suscripción:', requestBody);
+    console.log('-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*');
+    console.log('-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*');
+    console.log('-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*');
 
-  console.log("Creando la suscripción con los siguientes datos:");
-  console.log(subscriptionBody);
-  return;
+    // Realizamos la solicitud POST al servicio
+    const response = await fetch(subscriptionURL, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(requestBody)
+    });
 
-  const response = await fetch(createSubscriptionURL, {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(subscriptionBody)
-  });
+    if (!response.ok) {
+      const errorDetails = await response.text();
+      throw new Error(`Error al crear la suscripción: ${errorDetails}`);
+    }
 
-  if (!response.ok) {
-    throw new Error('Error al crear la suscripción');
+    // Suscripción creada exitosamente
+    console.log('Suscripción creada correctamente');
+    
+    // Guardar en localStorage para notificar a pending-payments.tsx
+    localStorage.setItem('subscriptionSuccess', 'true');
+  } catch (error) {
+    console.error('Error al crear la suscripción:', error);
   }
-
-  const data = await response.json();
-  return data;
-};
-*/
+  };
 
 // Handler principal
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -109,7 +123,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
 
       const plans: Plan[] = await response.json();
-      const activePlans = plans.filter(plan => plan.status === 'active');
+      // Filtramos los planes activos y cuyo "DurationType" no sea null ni undefined
+      const activePlans = plans.filter(plan => {
+        return plan.status === 'active' && plan.durationType !== null && plan.durationType !== undefined;
+      });
+      //const activePlans = plans.filter(plan => plan.status === 'active');
 
       // Seleccionar el plan adecuado según el totalAmount
       const selectedPlan = activePlans.find(plan => {
@@ -163,15 +181,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           console.log('El plan ha sido completamente cubierto con los pagos.');
           break; // Terminamos una vez que el plan ha sido cubierto
         }
-      }
-
-      console.log('++++++++++++++++++++++++++++++++++++++++++++++++++');
-      console.log('###  Creamos suscripcion para cuenta ', accountId)
-      console.log('###  Nombre del plan ', selectedPlan.name)
-      console.log('###  referencias usadas ', usedReferences)
+      }     
 
       // Comentamos la creación de la suscripción
-      
+      createSubscription(accountId, selectedPlan.name, selectedPlan.durationType, usedReferences);
 
     } catch (error) {
       console.error('Error:', error);

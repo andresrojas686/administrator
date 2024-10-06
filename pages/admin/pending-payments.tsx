@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import useSWR from 'swr';
 import withAuth from '../../components/withAuth';
 import { useAuth } from '../../contexts/AuthContext';
@@ -38,6 +38,7 @@ export default withAuth(function PendingPayments() {
   const [page, setPage] = useState(1);
   const [selectedPayments, setSelectedPayments] = useState<string[]>([]);
   const [totalSelectedAmount, setTotalSelectedAmount] = useState(0);
+  const [showSuccessPopup, setShowSuccessPopup] = useState(false); // Estado para controlar el popup
   const limit = 20;
 
   const { data, error } = useSWR<PaymentsResponse>(`/api/admin/payments?page=${page}&limit=${limit}&order=desc`, fetcher);
@@ -52,24 +53,24 @@ export default withAuth(function PendingPayments() {
 
   const handleCheckboxChange = (paymentId: string, accountId: string) => {
     const accountPayments = data?.payments.filter(payment => payment.accountId === accountId) || [];
-  
+
     if (selectedPayments.includes(paymentId)) {
       // Deseleccionar solo el pago clicado
       setSelectedPayments(prev => prev.filter(id => id !== paymentId));
-      
+
       // Restamos el valor disponible del pago deseleccionado
       const deselectedAmount = accountPayments.find(payment => payment.id === paymentId)
         ? accountPayments.find(payment => payment.id === paymentId)!.amount - accountPayments.find(payment => payment.id === paymentId)!.usedAmount
         : 0;
-  
+
       setTotalSelectedAmount(prev => prev - deselectedAmount);
-  
+
       if (selectedPayments.length === 1) {
         setDisabledAccounts([]);
       }
     } else {
       const firstAccountSelected = selectedPayments.length === 0;
-  
+
       if (firstAccountSelected || disabledAccounts.includes(accountId)) {
         const newSelectedPayments = [
           ...selectedPayments,
@@ -82,7 +83,7 @@ export default withAuth(function PendingPayments() {
             : sum + (payment.amount - payment.usedAmount), 0);
         setSelectedPayments(newSelectedPayments);
         setTotalSelectedAmount(prev => prev + totalAmount);
-  
+
         setDisabledAccounts([accountId]);
       }
     }
@@ -93,61 +94,62 @@ export default withAuth(function PendingPayments() {
 
   const handleSubmit = async () => {
     if (selectedPayments.length === 0) return; // Asegurarse de que haya pagos seleccionados
-    
+
     const selectedPaymentDetails = data?.payments.filter(payment => selectedPayments.includes(payment.id)) || [];
     const paymentReferences = selectedPaymentDetails.map(payment => payment.reference);
     const paymentIds = selectedPaymentDetails.map(payment => payment.id);
     const accountIds = selectedPaymentDetails.map(payment => payment.accountId);
     const paymentAvailableAmounts = selectedPaymentDetails.map(payment => payment.amount - payment.usedAmount); // Montos disponibles
     const totalAmount = totalSelectedAmount;
-    
-    //ver en navegador:
-    // console.log('Datos a enviar desde pending:', {
-    //   accountId: accountIds[0], // Enviamos solo el primer ID de cuenta
-    //   references: paymentReferences,
-    //   payments: paymentIds,
-    //   paymentAvailableAmounts: paymentAvailableAmounts,
-    //   totalAmount: totalAmount,
 
-    // });
-    // debugger;
-    try{
-    const response = await fetch('/api/admin/payments/selected', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        accountId: accountIds[0], // Enviamos solo el primer ID de cuenta
-        references: paymentReferences,
-        payments: paymentIds,
-        paymentAvailableAmounts: paymentAvailableAmounts,
-        totalAmount: totalAmount,
-      }),
-    });
 
-    // console.log("El programa se detendrá ahora.");
-    // process.exit(0);
-    
-    if (!response.ok) {
-      // Manejar el error
-      console.error('Error al enviar los datos');
+    try {
+      const response = await fetch('/api/admin/payments/selected', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          accountId: accountIds[0], // Enviamos solo el primer ID de cuenta
+          references: paymentReferences,
+          payments: paymentIds,
+          paymentAvailableAmounts: paymentAvailableAmounts,
+          totalAmount: totalAmount,
+        }),
+      });
+
+      // console.log("El programa se detendrá ahora.");
+      // process.exit(0);
+
+      if (!response.ok) {
+        // Manejar el error
+        console.error('Error al enviar los datos');
+      }
+      else {
+        console.log('se aplican pagos y se crea suscripcion correctamente');
+        //aqui puedo mostrar un popup de mensaje exitoso y hacer un reload page.
+        setShowSuccessPopup(true);
+      }
+
+    } catch (error) {
+      console.error('Error en handleSubmit:', error);
     }
-    
-  } catch (error) {
-    console.error('Error en handleSubmit:', error);
-  }
+  };
+
+  const handleLogout = () => {
+    logout();
+    router.push('/');
+  };
+
+  const closePopupAndReload = () => {
+    setShowSuccessPopup(false);
+    window.location.reload(); // Recargar la página después de cerrar el popup
   };
 
   if (error) return <div className={styles.error}>Failed to load</div>;
   if (!data) return <div className={styles.loading}>Loading...</div>;
 
   const { payments, totalPayments } = data;
-
-  const handleLogout = () => {
-    logout();
-    router.push('/');
-  };
 
   return (
     <div className={styles.container}>
@@ -236,8 +238,18 @@ export default withAuth(function PendingPayments() {
       </div>
 
       <button onClick={handleSubmit} className={styles.submitButton} disabled={selectedPayments.length === 0}>
-        Enviar Pagos Seleccionados
+        Agregar Suscripcion
       </button>
+      {/* Popup de éxito */}
+      {showSuccessPopup && (
+        <div className={styles.popup}>
+          <div className={styles.popupContent}>
+            <h2>¡Pagos aplicados con éxito!</h2>
+            <p>Los pagos seleccionados se han aplicado correctamente y se ha creado una suscripción.</p>
+            <button onClick={closePopupAndReload} className={styles.popupButton}>Cerrar</button>
+          </div>
+        </div>
+      )}
     </div>
   );
 });
