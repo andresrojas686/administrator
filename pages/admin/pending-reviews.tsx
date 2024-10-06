@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import useSWR from 'swr';
-import styles from '../styles/PendingReviews.module.css'
+import styles from '../styles/PendingReviews.module.css';
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
@@ -21,8 +21,8 @@ export default function ReviewsPage() {
   const handlePrevPage = () => setPage((prev) => Math.max(prev - 1, 1));
   const handleNextPage = () => setPage((prev) => prev + 1);
 
-  if (error) return <div>Failed to load reviews</div>;
-  if (!reviews) return <div>Loading...</div>;
+  if (error) return <div id="errorMessage">Failed to load reviews</div>;
+  if (!reviews) return <div id="loadingMessage">Loading...</div>;
 
   // Función para actualizar el estado de una review
   const updateReviewStatus = async (id: string, newStatus: string) => {
@@ -41,7 +41,7 @@ export default function ReviewsPage() {
 
       // Vuelve a cargar las reviews después de actualizar
       mutate(); // Esto recarga los datos de SWR
-      alert('Review status updated');
+      alert(`Review status updated to ${newStatus}`);
     } catch (error) {
       console.error(error);
       alert('Error updating review status');
@@ -49,9 +49,9 @@ export default function ReviewsPage() {
   };
 
   return (
-    <div className={styles.container}>
-      <h1>Reviews</h1>
-      <table className={styles.table}>
+    <div id="reviewsContainer" className={styles.container}>
+      <h1 id="title">Reviews</h1>
+      <table id="reviewsTable" className={styles.table}>
         <thead>
           <tr>
             <th>Reviewer ID</th>
@@ -69,9 +69,19 @@ export default function ReviewsPage() {
               <td>{review.rating}</td>
               <td>{review.status}</td>
               <td>
-                {review.status === 'pending' && (
-                  <button onClick={() => updateReviewStatus(review.id, 'approved')}>
+                {review.status !== 'approved' && (
+                  <button id={`approveButton-${review.id}`} onClick={() => updateReviewStatus(review.id, 'approved')}>
                     Approve
+                  </button>
+                )}
+                {review.status !== 'rejected' && (
+                  <button id={`rejectButton-${review.id}`} onClick={() => updateReviewStatus(review.id, 'rejected')}>
+                    Reject
+                  </button>
+                )}
+                {review.status !== 'pending' && (
+                  <button id={`pendingButton-${review.id}`} onClick={() => updateReviewStatus(review.id, 'pending')}>
+                    Set to Pending
                   </button>
                 )}
               </td>
@@ -80,11 +90,11 @@ export default function ReviewsPage() {
         </tbody>
       </table>
 
-      <div className={styles.pagination}>
-        <button onClick={handlePrevPage} disabled={page === 1}>
+      <div id="paginationControls" className={styles.pagination}>
+        <button id="prevPageButton" onClick={handlePrevPage} disabled={page === 1}>
           Previous
         </button>
-        <button onClick={handleNextPage}>Next</button>
+        <button id="nextPageButton" onClick={handleNextPage}>Next</button>
       </div>
     </div>
   );
