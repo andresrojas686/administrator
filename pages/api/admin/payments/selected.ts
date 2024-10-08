@@ -1,5 +1,7 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import { serialize } from 'cookie';
+// import { redirect } from 'next/dist/server/api-utils';
+// import { redirect } from'next/navigation';
 
 // Obtenemos la URL del servicio de planes desde las variables de entorno
 const PLANS_URL = process.env.PLANS_URL || '';
@@ -66,7 +68,7 @@ const createSubscription = async (accountId: string, planName: string, durationT
   try {
     // Construimos la URL del servicio para crear la suscripción
     const subscriptionURL = `http://127.0.0.1:3001/admin/accounts/${accountId}/subscription`;
-    
+
     // Definimos el cuerpo de la solicitud
     const requestBody = {
       plan: planName,
@@ -76,15 +78,15 @@ const createSubscription = async (accountId: string, planName: string, durationT
       paymentReferences: paymentReferences
     };
 
-    console.log('-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*');
+    // console.log('-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*');
     console.log('-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*');
     console.log('-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*');
     console.log('Enviando solicitud para crear suscripción:', requestBody);
     console.log('-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*');
     console.log('-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*');
-    console.log('-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*');
+    // console.log('-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*');
 
-    // Realizamos la solicitud POST al servicio
+    // Realizamos la solicitud PUT al servicio
     const response = await fetch(subscriptionURL, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
@@ -94,23 +96,30 @@ const createSubscription = async (accountId: string, planName: string, durationT
     if (!response.ok) {
       const errorDetails = await response.text();
       throw new Error(`Error al crear la suscripción: ${errorDetails}`);
+    } else {
+      // Suscripción creada exitosamente
+      console.log('Suscripción creada correctamente??? ver coleccionDB');
+      // Enviamos la respuesta al frontend
+      // redirect('/suscripción-exitosa');
+      return 'Suscripción creada exitosamente';
+      
     }
 
-    // Suscripción creada exitosamente
-    console.log('Suscripción creada correctamente');
-    
+
+
     // Guardar en localStorage para notificar a pending-payments.tsx
     localStorage.setItem('subscriptionSuccess', 'true');
   } catch (error) {
     console.error('Error al crear la suscripción:', error);
+    
   }
-  };
+};
 
 // Handler principal
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method === 'POST') {
     const { accountId, references, payments, totalAmount, paymentAvailableAmounts } = req.body;
-         
+
     console.log('Datos recibidos en selected.ts:', { accountId, references, payments, totalAmount, paymentAvailableAmounts });
 
     try {
@@ -141,7 +150,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         console.log('Plan seleccionado Correctamente');
         console.log('Plan seleccionado:', selectedPlan);
       }
-      
+
       // Total amount inicial que representa el valor del plan
       let remainingBalance = selectedPlan.prices[0].price || 0;
       console.log('Total Pagos inicial:', remainingBalance);
@@ -181,10 +190,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           console.log('El plan ha sido completamente cubierto con los pagos.');
           break; // Terminamos una vez que el plan ha sido cubierto
         }
-      }     
+      }
 
       // Comentamos la creación de la suscripción
-      createSubscription(accountId, selectedPlan.name, selectedPlan.durationType, usedReferences);
+      await createSubscription(accountId, selectedPlan.name, selectedPlan.durationType, usedReferences);
+
+      return res.status(200).json({ message: 'Suscripción creada correctamente???' });
 
     } catch (error) {
       console.error('Error:', error);
