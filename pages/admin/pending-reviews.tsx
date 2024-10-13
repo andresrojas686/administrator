@@ -16,16 +16,16 @@ export default function ReviewsPage() {
   const [page, setPage] = useState(1);
   const limit = 10;
 
-  const { data: reviews, error, mutate } = useSWR<Review[]>(`http://localhost:3010/public/reviews?page=1&limit=10`, fetcher);
+  const { data: reviews, error, mutate } = useSWR<Review[]>(`http://localhost:3010/admin/reviews?page=1&limit=10`, fetcher);
 
   const handlePrevPage = () => setPage((prev) => Math.max(prev - 1, 1));
   const handleNextPage = () => setPage((prev) => prev + 1);
 
-  if (error) return <div id="errorMessage">Failed to load reviews</div>;
-  if (!reviews) return <div id="loadingMessage">Loading...</div>;
+  if (error) return <div>Failed to load reviews</div>;
+  if (!reviews) return <div>Loading...</div>;
 
   // Función para actualizar el estado de una review
-  const updateReviewStatus = async (id: string, newStatus: string) => {
+  const updateReviewStatus = async (id: string, newStatus: 'approved' | 'pending' | 'rejected') => {
     try {
       const response = await fetch(`http://localhost:3010/admin/reviews/${id}`, {
         method: 'PUT',
@@ -39,7 +39,7 @@ export default function ReviewsPage() {
         throw new Error('Failed to update review status');
       }
 
-      // Vuelve a cargar las reviews después de actualizar
+      // Recargar las reviews después de actualizar
       mutate(); // Esto recarga los datos de SWR
       alert(`Review status updated to ${newStatus}`);
     } catch (error) {
@@ -48,53 +48,104 @@ export default function ReviewsPage() {
     }
   };
 
-  return (
-    <div id="reviewsContainer" className={styles.container}>
-      <h1 id="title">Reviews</h1>
-      <table id="reviewsTable" className={styles.table}>
-        <thead>
-          <tr>
-            <th>Reviewer ID</th>
-            <th>Comment</th>
-            <th>Rating</th>
-            <th>Status</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {reviews.map((review) => (
-            <tr key={review.id}>
-              <td>{review.reviewerId}</td>
-              <td>{review.comment}</td>
-              <td>{review.rating}</td>
-              <td>{review.status}</td>
-              <td>
-                {review.status !== 'approved' && (
-                  <button id={`approveButton-${review.id}`} onClick={() => updateReviewStatus(review.id, 'approved')}>
-                    Approve
-                  </button>
-                )}
-                {review.status !== 'rejected' && (
-                  <button id={`rejectButton-${review.id}`} onClick={() => updateReviewStatus(review.id, 'rejected')}>
-                    Reject
-                  </button>
-                )}
-                {review.status !== 'pending' && (
-                  <button id={`pendingButton-${review.id}`} onClick={() => updateReviewStatus(review.id, 'pending')}>
-                    Set to Pending
-                  </button>
-                )}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+  // Filtrar las reviews por estado
+  const pendingReviews = reviews.filter((review) => review.status === 'pending');
+  const approvedReviews = reviews.filter((review) => review.status === 'approved');
+  const rejectedReviews = reviews.filter((review) => review.status === 'rejected');
 
-      <div id="paginationControls" className={styles.pagination}>
-        <button id="prevPageButton" onClick={handlePrevPage} disabled={page === 1}>
-          Previous
-        </button>
-        <button id="nextPageButton" onClick={handleNextPage}>Next</button>
+  return (
+    <div className={styles.container}>
+      <h1>Reviews Management</h1>
+
+      <div className={styles.columns}>
+        {/* Columna de Pending Reviews */}
+        <div className={styles.column}>
+          <h2>Pending Reviews</h2>
+          <table className={styles.table}>
+            <thead>
+              <tr>
+                <th>Reviewer ID</th>
+                <th>Comment</th>
+                <th>Rating</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {pendingReviews.map((review) => (
+                <tr key={review.id}>
+                  <td>{review.reviewerId}</td>
+                  <td>{review.comment}</td>
+                  <td>{review.rating}</td>
+                  <td className={styles.actionsButtons}>
+                    <button onClick={() => updateReviewStatus(review.id, 'approved')}>Approve</button>
+                    <button onClick={() => updateReviewStatus(review.id, 'rejected')}>Reject</button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Columna de Approved Reviews */}
+        <div className={styles.column}>
+          <h2>Approved Reviews</h2>
+          <table className={styles.table}>
+            <thead>
+              <tr>
+                <th>Reviewer ID</th>
+                <th>Comment</th>
+                <th>Rating</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {approvedReviews.map((review) => (
+                <tr key={review.id}>
+                  <td>{review.reviewerId}</td>
+                  <td>{review.comment}</td>
+                  <td>{review.rating}</td>
+                  <td className={styles.actionsButtons}>
+                    <button onClick={() => updateReviewStatus(review.id, 'pending')}>Set as Pending</button>
+                    <button onClick={() => updateReviewStatus(review.id, 'rejected')}>Reject</button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Columna de Rejected Reviews */}
+        <div className={styles.column}>
+          <h2>Rejected Reviews</h2>
+          <table className={styles.table}>
+            <thead>
+              <tr>
+                <th>Reviewer ID</th>
+                <th>Comment</th>
+                <th>Rating</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rejectedReviews.map((review) => (
+                <tr key={review.id}>
+                  <td>{review.reviewerId}</td>
+                  <td>{review.comment}</td>
+                  <td>{review.rating}</td>
+                  <td className={styles.actionsButtons}>
+                    <button onClick={() => updateReviewStatus(review.id, 'pending')}>Set as Pending</button>
+                    <button onClick={() => updateReviewStatus(review.id, 'approved')}>Approve</button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div className={styles.pagination}>
+        <button onClick={handlePrevPage} disabled={page === 1}>Previous</button>
+        <button onClick={handleNextPage}>Next</button>
       </div>
     </div>
   );
