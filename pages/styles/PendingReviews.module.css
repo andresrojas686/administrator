@@ -1,19 +1,23 @@
 .container {
   padding: 20px;
-  background-color: #f0f2f5; /* Fondo claro que resalta el contenido */
+  background-color: #e5effd; /* Fondo claro que resalta el contenido */
   border-radius: 10px;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Sombras suaves para elevar el contenedor */
   font-family: 'Arial', sans-serif;
+  width: 100%; /* Asegura que el contenedor ocupe el ancho completo */
+  box-sizing: border-box;
 }
 
 .columns {
   display: flex;
   justify-content: space-between;
   gap: 20px; /* Espacio entre columnas */
+  flex-wrap: wrap; /* Permite que las columnas se reorganicen en pantallas más pequeñas */
 }
 
 .column {
-  width: 30%;
+  flex-grow: 1; /* Las columnas crecen de manera uniforme para ocupar el espacio disponible */
+  flex-basis: 0; /* Las columnas pueden encogerse si es necesario */
   background-color: #fff; /* Fondo blanco para las columnas */
   border: 1px solid #ccc;
   padding: 15px;
@@ -61,7 +65,6 @@
   background-color: #d6d8db; /* Fondo más oscuro al hacer hover */
 }
 
-
 .pagination {
   margin-top: 30px;
   display: flex;
@@ -92,4 +95,48 @@
 
 .pagination button:disabled:hover {
   transform: none; /* Sin efecto hover en botones desactivados */
+}
+
+.popupButtonApprove {
+  background-color: #4CAF50;
+  color: white;
+  margin: 5% 5%;
+  padding: 0.5rem 1rem; /* Espaciado interno para que el estado se vea claro */
+  border-radius: 8px; /* Bordes redondeados */
+  font-weight: bold; /* Texto en negrita */
+  text-align: center; /* Centrado del texto */
+}
+
+.popupButtonApprove:hover {
+  background-color: #45a049;
+}
+
+.popupButtonPending {
+  background-color: #FFEB3B; /* Color amarillo que indica estado pendiente */
+  color: #333; /* Color de texto oscuro para buena legibilidad */
+  margin: 5% 5%;
+  padding: 0.5rem 1rem; /* Espaciado interno para que el estado se vea claro */
+  border-radius: 8px; /* Bordes redondeados */
+  font-weight: bold; /* Texto en negrita */
+  text-align: center; /* Centrado del texto */
+}
+
+.popupButtonPending:hover  {
+  background-color: #FDD835; /* Color un poco más oscuro al hacer hover */
+  /*
+  cursor: not-allowed; /* Indicador de que no se puede hacer clic en este estado */ 
+}
+
+.popupButtonDecline {
+  background-color: #ff0000;
+  color: white;
+  padding: 10px 20px;
+  margin: 5% 5%;
+  border-radius: 8px; /* Bordes redondeados */
+  font-weight: bold; /* Texto en negrita */
+  text-align: center; /* Centrado del texto */
+}
+
+.popupButtonDecline:hover {
+  background-color: #d3361b;
 }

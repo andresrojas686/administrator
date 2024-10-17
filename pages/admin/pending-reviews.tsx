@@ -77,8 +77,8 @@ export default function ReviewsPage() {
                   <td>{review.comment}</td>
                   <td>{review.rating}</td>
                   <td className={styles.actionsButtons}>
-                    <button onClick={() => updateReviewStatus(review.id, 'approved')}>Approve</button>
-                    <button onClick={() => updateReviewStatus(review.id, 'rejected')}>Reject</button>
+                    <button className={styles.popupButtonApprove} onClick={() => updateReviewStatus(review.id, 'approved')}>Approve</button>
+                    <button className={styles.popupButtonDecline} onClick={() => updateReviewStatus(review.id, 'rejected')}>Reject</button>
                   </td>
                 </tr>
               ))}
@@ -105,8 +105,8 @@ export default function ReviewsPage() {
                   <td>{review.comment}</td>
                   <td>{review.rating}</td>
                   <td className={styles.actionsButtons}>
-                    <button onClick={() => updateReviewStatus(review.id, 'pending')}>Set as Pending</button>
-                    <button onClick={() => updateReviewStatus(review.id, 'rejected')}>Reject</button>
+                    <button className={styles.popupButtonPending} onClick={() => updateReviewStatus(review.id, 'pending')}>Set as Pending</button>
+                    <button className={styles.popupButtonDecline} onClick={() => updateReviewStatus(review.id, 'rejected')}>Reject</button>
                   </td>
                 </tr>
               ))}
@@ -133,8 +133,8 @@ export default function ReviewsPage() {
                   <td>{review.comment}</td>
                   <td>{review.rating}</td>
                   <td className={styles.actionsButtons}>
-                    <button onClick={() => updateReviewStatus(review.id, 'pending')}>Set as Pending</button>
-                    <button onClick={() => updateReviewStatus(review.id, 'approved')}>Approve</button>
+                    <button  className={styles.popupButtonPending} onClick={() => updateReviewStatus(review.id, 'pending')}>Set as Pending</button>
+                    <button className={styles.popupButtonApprove} onClick={() => updateReviewStatus(review.id, 'approved')}>Approve</button>
                   </td>
                 </tr>
               ))}
