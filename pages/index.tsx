@@ -37,7 +37,7 @@ export default function Home({
 
       <main>
         <h1 className="title">
-          Welcome to <a href="https://nextjs.org">Estilistas-Go!</a>
+          Welcome to <a href="https://nextjs.org">Estilistas-Go!  Administrator</a>
         </h1><br></br>
 
         <Link href="/login" className={styles2.loginButton}>
