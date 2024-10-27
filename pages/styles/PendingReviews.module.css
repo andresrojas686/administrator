@@ -1,36 +1,72 @@
+/* Contenedor principal para los tabs */
 .container {
   padding: 20px;
-  background-color: #e5effd; /* Fondo claro que resalta el contenido */
+  background-color: #e5effd;
   border-radius: 10px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Sombras suaves para elevar el contenedor */
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
   font-family: 'Arial', sans-serif;
-  width: 100%; /* Asegura que el contenedor ocupe el ancho completo */
+  width: 100%;
   box-sizing: border-box;
 }
 
-.columns {
+/* Estilos para la estructura de tabs */
+.tab {
+padding: 15px 25px;
+background-color: #e3f2fd; /* Color de fondo ligero */
+color: #333; /* Color de texto oscuro para buena legibilidad */
+border: 1px solid #90caf9; /* Borde de un tono ligeramente más oscuro */
+border-radius: 12px; /* Bordes redondeados */
+font-size: 16px;
+font-weight: 500;
+cursor: pointer;
+transition: background-color 0.3s ease, border-color 0.3s ease; /* Transición suave */
+}
+
+.tab:hover {
+  background-color: #bbdefb; /* Fondo más oscuro en hover */
+  border-color: #64b5f6; /* Borde más oscuro en hover */
+}
+
+
+.tabs {
   display: flex;
   justify-content: space-between;
-  gap: 20px; /* Espacio entre columnas */
-  flex-wrap: wrap; /* Permite que las columnas se reorganicen en pantallas más pequeñas */
+  gap: 20px;
+  margin-bottom: 20px;
 }
 
-.column {
-  flex-grow: 1; /* Las columnas crecen de manera uniforme para ocupar el espacio disponible */
-  flex-basis: 0; /* Las columnas pueden encogerse si es necesario */
-  background-color: #fff; /* Fondo blanco para las columnas */
+.tabButton {
+  flex-grow: 1;
+  padding: 10px 20px;
   border: 1px solid #ccc;
+  border-radius: 10px 10px 0 0;
+  background-color: #ffffff;
+  text-align: center;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.3s, color 0.3s;
+}
+
+.tabButton.active {
+  background-color: #007BFF;
+  color: white;
+}
+
+.tabButton:hover {
+  background-color: #f1f1f1;
+}
+
+/* Contenedor de contenido para cada tab */
+.tabContent {
   padding: 15px;
-  border-radius: 10px; /* Bordes redondeados */
+  background-color: #ffffff;
+  border: 1px solid #ccc;
+  border-radius: 0 0 10px 10px;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-  transition: transform 0.3s, box-shadow 0.3s; /* Animación suave */
+  transition: transform 0.3s, box-shadow 0.3s;
 }
 
-.column:hover {
-  transform: translateY(-5px); /* Efecto de elevación al pasar el cursor */
-  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
-}
-
+/* Tabla de reviews dentro de cada tab */
 .table {
   width: 100%;
   border-collapse: collapse;
@@ -41,16 +77,16 @@
 .table td {
   border: 1px solid #ddd;
   padding: 12px;
-  text-align: left; /* Alineación izquierda para mejor lectura */
+  text-align: left;
   font-size: 16px;
   color: #333;
 }
 
 .table th {
-  background-color: #007BFF; /* Color de fondo vibrante para el encabezado */
+  background-color: #007BFF;
   color: white;
   font-weight: bold;
-  text-transform: uppercase; /* Texto en mayúsculas para el encabezado */
+  text-transform: uppercase;
 }
 
 .table td {
@@ -58,18 +94,56 @@
 }
 
 .table tr:nth-child(even) td {
-  background-color: #e9ecef; /* Alternancia de colores en filas */
+  background-color: #e9ecef;
 }
 
 .table tr:hover td {
-  background-color: #d6d8db; /* Fondo más oscuro al hacer hover */
+  background-color: #d6d8db;
 }
 
+/* Botones de acción */
+.popupButtonApprove,
+.popupButtonPending,
+.popupButtonDecline {
+  color: white;
+  margin: 5% 5%;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  font-weight: bold;
+  text-align: center;
+}
+
+.popupButtonApprove {
+  background-color: #4CAF50;
+}
+
+.popupButtonApprove:hover {
+  background-color: #45a049;
+}
+
+.popupButtonPending {
+  background-color: #FFEB3B;
+  color: #333;
+}
+
+.popupButtonPending:hover {
+  background-color: #FDD835;
+}
+
+.popupButtonDecline {
+  background-color: #ff0000;
+}
+
+.popupButtonDecline:hover {
+  background-color: #d3361b;
+}
+
+/* Paginación */
 .pagination {
   margin-top: 30px;
   display: flex;
   justify-content: center;
-  gap: 15px; /* Espacio entre botones */
+  gap: 15px;
 }
 
 .pagination button {
@@ -80,63 +154,19 @@
   padding: 10px 20px;
   font-size: 16px;
   cursor: pointer;
-  transition: background-color 0.3s, transform 0.3s; /* Animación suave */
+  transition: background-color 0.3s, transform 0.3s;
 }
 
 .pagination button:hover {
-  background-color: #0056b3; /* Cambio de color al pasar el cursor */
-  transform: translateY(-3px); /* Efecto de elevación */
+  background-color: #0056b3;
+  transform: translateY(-3px);
 }
 
 .pagination button:disabled {
-  background-color: #6c757d; /* Color desactivado para botones inactivos */
+  background-color: #6c757d;
   cursor: not-allowed;
 }
 
 .pagination button:disabled:hover {
-  transform: none; /* Sin efecto hover en botones desactivados */
-}
-
-.popupButtonApprove {
-  background-color: #4CAF50;
-  color: white;
-  margin: 5% 5%;
-  padding: 0.5rem 1rem; /* Espaciado interno para que el estado se vea claro */
-  border-radius: 8px; /* Bordes redondeados */
-  font-weight: bold; /* Texto en negrita */
-  text-align: center; /* Centrado del texto */
-}
-
-.popupButtonApprove:hover {
-  background-color: #45a049;
-}
-
-.popupButtonPending {
-  background-color: #FFEB3B; /* Color amarillo que indica estado pendiente */
-  color: #333; /* Color de texto oscuro para buena legibilidad */
-  margin: 5% 5%;
-  padding: 0.5rem 1rem; /* Espaciado interno para que el estado se vea claro */
-  border-radius: 8px; /* Bordes redondeados */
-  font-weight: bold; /* Texto en negrita */
-  text-align: center; /* Centrado del texto */
-}
-
-.popupButtonPending:hover  {
-  background-color: #FDD835; /* Color un poco más oscuro al hacer hover */
-  /*
-  cursor: not-allowed; /* Indicador de que no se puede hacer clic en este estado */ 
-}
-
-.popupButtonDecline {
-  background-color: #ff0000;
-  color: white;
-  padding: 10px 20px;
-  margin: 5% 5%;
-  border-radius: 8px; /* Bordes redondeados */
-  font-weight: bold; /* Texto en negrita */
-  text-align: center; /* Centrado del texto */
-}
-
-.popupButtonDecline:hover {
-  background-color: #d3361b;
+  transform: none;
 }
